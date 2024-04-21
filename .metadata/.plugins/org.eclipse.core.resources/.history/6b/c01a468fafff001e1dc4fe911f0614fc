@@ -1,0 +1,45 @@
+package pkgcore;
+
+import java.util.concurrent.*;
+
+public class ThreadTerminal {
+	 public static void main(String[] args) {
+	        ExecutorService executor = Executors.newFixedThreadPool(4);
+
+	        CompletableFuture<Integer> future1 = CompletableFuture.supplyAsync(() -> {
+	            try {
+	                Thread.sleep(2000);
+	            } catch (InterruptedException e) {
+	                Thread.currentThread().interrupt();
+	                throw new RuntimeException("Task interrupted!");
+	            }
+	            return 42;
+	        }, executor);
+
+	        CompletableFuture<Integer> future2 = CompletableFuture.supplyAsync(() -> {
+	            try {
+	                Thread.sleep(3000);
+	            } catch (InterruptedException e) {
+	                Thread.currentThread().interrupt();
+	                throw new RuntimeException("Task interrupted!");
+	            }
+	            return 100;
+	        }, executor);
+
+	        CompletableFuture<Integer> result = future1.thenCombineAsync(future2, (x, y) -> x + y);
+
+	        result.exceptionally(ex -> {
+	            System.err.println("An exception occurred: " + ex.getMessage());
+	            return null;
+	        });
+
+	        executor.shutdown();
+
+	        try {
+	            System.out.println("Result: " + result.get());
+	        } catch (InterruptedException | ExecutionException e) {
+	            System.err.println("Task could not be completed: " + e.getMessage());
+	        }
+	    }
+
+}
